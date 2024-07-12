@@ -13,6 +13,7 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 import javafx.scene.text.Font;
 import javafx.stage.Stage;
 
@@ -35,10 +36,23 @@ public class Main extends Application {
         hBox.setSpacing(10);
         hBox.setAlignment(Pos.CENTER);
 
-        borderPane.setTop(title);
+        TableView<Cours> tableCours = faireTableCours();
 
-        // Create TableView and Columns
-        TableView<Cours> tableView = new TableView<>();
+        hBox.getChildren().add(tableCours);
+        HBox.setHgrow(tableCours, Priority.ALWAYS);
+
+        borderPane.setTop(title);
+        borderPane.setCenter(hBox);
+
+        Scene scene = new Scene(borderPane);
+        primaryStage.setScene(scene);
+        primaryStage.setTitle("Gestionnaire d'horaire étudiant");
+        primaryStage.setMaximized(true);
+        primaryStage.show();
+    }
+
+    private TableView<Cours> faireTableCours() {
+        TableView<Cours> tableCours = new TableView<>();
 
         TableColumn<Cours, Integer> numeroColumn = new TableColumn<>("Numero");
         numeroColumn.setCellValueFactory(new PropertyValueFactory<>("numero"));
@@ -49,11 +63,10 @@ public class Main extends Application {
         TableColumn<Cours, Integer> creditsColumn = new TableColumn<>("Credits");
         creditsColumn.setCellValueFactory(new PropertyValueFactory<>("credits"));
 
-        tableView.getColumns().add(numeroColumn);
-        tableView.getColumns().add(matiereColumn);
-        tableView.getColumns().add(creditsColumn);
+        tableCours.getColumns().add(numeroColumn);
+        tableCours.getColumns().add(matiereColumn);
+        tableCours.getColumns().add(creditsColumn);
 
-        // Add mock data to the TableView
         ObservableList<Cours> coursList = FXCollections.observableArrayList();
         Horaire horaire1 = new Horaire();
         Horaire.Seance seance1 = horaire1.new Seance(Horaire.JourDeSemaine.LUNDI, LocalTime.of(9, 0),
@@ -69,14 +82,8 @@ public class Main extends Application {
         horaire2.ajouterSeance(seance2);
         coursList.add(new Cours(102, "Physique", horaire2, 4));
 
-        tableView.setItems(coursList);
+        tableCours.setItems(coursList);
 
-        // Set TableView to center
-        borderPane.setCenter(tableView);
-
-        Scene scene = new Scene(borderPane, 600, 400);
-        primaryStage.setScene(scene);
-        primaryStage.setTitle("Gestionnaire d'horaire étudiant");
-        primaryStage.show();
+        return tableCours;
     }
 }
