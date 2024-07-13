@@ -3,12 +3,14 @@ public class Cours {
     private String matiere;
     private Horaire horaire;
     private int credits;
+    private Etudiant.Niveau niveau;
 
-    public Cours(int numero, String matiere, Horaire horaire, int credits) {
+    public Cours(int numero, String matiere, Horaire horaire, int credits, Etudiant.Niveau niveau) {
         this.numero = numero;
         this.matiere = matiere;
         this.horaire = horaire;
         this.credits = credits;
+        this.niveau = niveau;
     }
 
     public int getNumero() {
@@ -41,5 +43,13 @@ public class Cours {
 
     public void setCredits(int credits) {
         this.credits = credits;
+    }
+
+    public Etudiant.Niveau getNiveau() {
+        return niveau;
+    }
+
+    public void setNiveau(Etudiant.Niveau niveau) {
+        this.niveau = niveau;
     }
 }

@@ -4,10 +4,18 @@ public class Etudiant {
         MAITRISE,
         DOCTORAT;
     }
+
     private String prenom;
     private String nomFamille;
     private Niveau niveau;
     private Horaire horaire;
+
+    public Etudiant(String prenom, String nomFamille, Niveau niveau) {
+        this.prenom = prenom;
+        this.nomFamille = nomFamille;
+        this.niveau = niveau;
+        this.horaire = new Horaire();
+    }
 
     public String getPrenom() {
         return this.prenom;
