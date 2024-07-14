@@ -2,6 +2,7 @@ import java.time.LocalTime;
 import java.time.LocalDate;
 
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
@@ -12,15 +13,33 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.control.cell.TextFieldTableCell;
+import javafx.scene.control.cell.ComboBoxTableCell;
+import javafx.scene.control.cell.CheckBoxTableCell;
 import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.text.Font;
 import javafx.stage.Stage;
+import javafx.util.StringConverter;
+import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
+import java.util.Map;
 
 public class Main extends Application {
+    private TableView<Cours> tableCours;
+    private TableView<Etudiant> tableEtudiants;
+
+    private static final String[] DAYS = { "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi" };
+    private static final int START_HOUR = 8;
+    private static final int END_HOUR = 20;
+
     public static void main(String[] args) {
         launch(args);
     }
@@ -50,7 +69,7 @@ public class Main extends Application {
         VBox.setVgrow(sectionCours, Priority.ALWAYS);
 
         Button createCoursButton = new Button("Créer nouveau cours");
-        TableView<Cours> tableCours = faireTableCours();
+        tableCours = faireTableCours();
 
         VBox.setVgrow(tableCours, Priority.ALWAYS);
         sectionCours.getChildren().addAll(createCoursButton, tableCours);
@@ -61,7 +80,7 @@ public class Main extends Application {
         VBox.setVgrow(sectionEtudiants, Priority.ALWAYS);
 
         Button createEtudiantButton = new Button("Créer un nouvel étudiant");
-        TableView<Etudiant> tableEtudiants = faireTableEtudiant();
+        tableEtudiants = faireTableEtudiant();
 
         VBox.setVgrow(tableEtudiants, Priority.ALWAYS);
         sectionEtudiants.getChildren().addAll(createEtudiantButton, tableEtudiants);
@@ -171,23 +190,101 @@ public class Main extends Application {
         Label creditsLabel = new Label("Credits:");
         TextField creditsField = new TextField(String.valueOf(cours.getCredits()));
 
-        // Label niveauLabel = new Label("Niveau:");
-        // TextField niveauField = new TextField(String.valueOf(cours.getNiveau()));
+        Label niveauLabel = new Label("Niveau:");
+        ComboBox<Etudiant.Niveau> niveauComboBox = new ComboBox<>(
+                FXCollections.observableArrayList(Etudiant.Niveau.values()));
+        niveauComboBox.setValue(cours.getNiveau());
+
+        Label seancesTitle = new Label("Séances:");
+        seancesTitle.setFont(new Font("Arial", 16));
+        seancesTitle.setStyle("-fx-font-weight: bold;");
+
+        TableView<Horaire.Seance> tableSeances = new TableView<>();
+        tableSeances.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        tableSeances.setEditable(true);
+
+        TableColumn<Horaire.Seance, Horaire.JourDeSemaine> jourColumn = new TableColumn<>("Jour");
+        jourColumn.setCellValueFactory(new PropertyValueFactory<>("jour"));
+        jourColumn.setCellFactory(
+                ComboBoxTableCell.forTableColumn(FXCollections.observableArrayList(Horaire.JourDeSemaine.values())));
+        jourColumn.setOnEditCommit(event -> event.getRowValue().setJour(event.getNewValue()));
+
+        TableColumn<Horaire.Seance, LocalTime> heureDebutColumn = new TableColumn<>("Heure Début");
+        heureDebutColumn.setCellValueFactory(new PropertyValueFactory<>("tempsDebut"));
+        heureDebutColumn.setCellFactory(TextFieldTableCell.forTableColumn(new LocalTimeStringConverter()));
+        heureDebutColumn.setOnEditCommit(event -> event.getRowValue().setTempsDebut(event.getNewValue()));
+
+        TableColumn<Horaire.Seance, LocalTime> heureFinColumn = new TableColumn<>("Heure Fin");
+        heureFinColumn.setCellValueFactory(new PropertyValueFactory<>("tempsFin"));
+        heureFinColumn.setCellFactory(TextFieldTableCell.forTableColumn(new LocalTimeStringConverter()));
+        heureFinColumn.setOnEditCommit(event -> event.getRowValue().setTempsFin(event.getNewValue()));
+
+        TableColumn<Horaire.Seance, Horaire.TypeDeSeance> typeColumn = new TableColumn<>("Type");
+        typeColumn.setCellValueFactory(new PropertyValueFactory<>("typeDeSeance"));
+        typeColumn.setCellFactory(
+                ComboBoxTableCell.forTableColumn(FXCollections.observableArrayList(Horaire.TypeDeSeance.values())));
+        typeColumn.setOnEditCommit(event -> event.getRowValue().setTypeDeSeance(event.getNewValue()));
+
+        TableColumn<Horaire.Seance, Boolean> repeteColumn = new TableColumn<>("Répète");
+        repeteColumn.setCellValueFactory(new PropertyValueFactory<>("repete"));
+        repeteColumn.setCellFactory(CheckBoxTableCell.forTableColumn(repeteColumn));
+        repeteColumn.setOnEditCommit(event -> event.getRowValue().setRepete(event.getNewValue()));
+
+        TableColumn<Horaire.Seance, LocalDate> dateDebutColumn = new TableColumn<>("Date Début");
+        dateDebutColumn.setCellValueFactory(new PropertyValueFactory<>("dateDebut"));
+        dateDebutColumn.setCellFactory(DatePickerTableCell.forTableColumn());
+        // dateDebutColumn.setOnEditCommit(event -> {
+        //     Horaire.Seance seance = event.getRowValue();
+        //     Platform.runLater(() -> System.out.println("Attempting to update Date Début: " + event.getNewValue()));
+        //     if (seance.getDateFin() != null && event.getNewValue().isAfter(seance.getDateFin())) {
+        //         showAlert("La date de début doit être antérieure à la date de fin.");
+        //         tableSeances.refresh();
+        //     } else {
+        //         seance.setDateDebut(event.getNewValue());
+        //         Platform.runLater(() -> System.out.println("Date Début updated: " + event.getNewValue()));
+        //     }
+        // });
+
+        TableColumn<Horaire.Seance, LocalDate> dateFinColumn = new TableColumn<>("Date Fin");
+        dateFinColumn.setCellValueFactory(new PropertyValueFactory<>("dateFin"));
+        dateFinColumn.setCellFactory(DatePickerTableCell.forTableColumn());
+        dateFinColumn.setOnEditCommit(event -> {
+            Horaire.Seance seance = event.getRowValue();
+            if (seance.getDateDebut() != null && event.getNewValue().isBefore(seance.getDateDebut())) {
+                showAlert("La date de fin doit être postérieure à la date de début.");
+                tableSeances.refresh();
+            } else {
+                seance.setDateFin(event.getNewValue());
+            }
+        });
+
+        tableSeances.getColumns().addAll(jourColumn, heureDebutColumn, heureFinColumn, typeColumn, repeteColumn,
+                dateDebutColumn, dateFinColumn);
+
+        ObservableList<Horaire.Seance> seanceList = FXCollections.observableArrayList(cours.getHoraire().getSeances());
+        tableSeances.setItems(seanceList);
+
+        VBox seancesBox = new VBox();
+        seancesBox.setSpacing(10);
+        seancesBox.getChildren().addAll(seancesTitle, tableSeances);
 
         Button saveButton = new Button("Sauvegarder");
         saveButton.setOnAction(e -> {
             cours.setNumero(Integer.parseInt(numeroField.getText()));
             cours.setMatiere(matiereField.getText());
             cours.setCredits(Integer.parseInt(creditsField.getText()));
+            cours.setNiveau(niveauComboBox.getValue());
+            tableCours.refresh();
             detailStage.close();
         });
 
         detailLayout.getChildren().addAll(
-            numeroLabel, numeroField,
-            matiereLabel, matiereField,
-            creditsLabel, creditsField,
-            saveButton
-        );
+                numeroLabel, numeroField,
+                matiereLabel, matiereField,
+                creditsLabel, creditsField,
+                niveauLabel, niveauComboBox,
+                seancesBox,
+                saveButton);
 
         Scene detailScene = new Scene(detailLayout, 300, 250);
         detailStage.setScene(detailScene);
@@ -209,5 +306,37 @@ public class Main extends Application {
         detailStage.setTitle("Détails de l'Étudiant");
         detailStage.show();
     }
-}
 
+    private void showAlert(String message) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle("Erreur de Validation");
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
+    }
+
+    public class LocalTimeStringConverter extends StringConverter<LocalTime> {
+        @Override
+        public String toString(LocalTime time) {
+            return time != null ? time.toString() : "";
+        }
+
+        @Override
+        public LocalTime fromString(String string) {
+            return string != null && !string.isEmpty() ? LocalTime.parse(string) : null;
+        }
+    }
+
+    public class LocalDateStringConverter extends StringConverter<LocalDate> {
+        @Override
+        public String toString(LocalDate date) {
+            return date != null ? date.toString() : "";
+        }
+
+        @Override
+        public LocalDate fromString(String string) {
+            return string != null && !string.isEmpty() ? LocalDate.parse(string) : null;
+        }
+    }
+
+}
