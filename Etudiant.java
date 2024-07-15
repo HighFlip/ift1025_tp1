@@ -1,3 +1,5 @@
+import java.util.List;
+
 public class Etudiant {
     public enum Niveau {
         BACCALAUREAT,
@@ -9,12 +11,14 @@ public class Etudiant {
     private String nomFamille;
     private Niveau niveau;
     private Horaire horaire;
+    private List<Cours> cours;
 
-    public Etudiant(String prenom, String nomFamille, Niveau niveau) {
+    public Etudiant(String prenom, String nomFamille, Niveau niveau, Horaire horaire, List<Cours> cours) {
         this.prenom = prenom;
         this.nomFamille = nomFamille;
         this.niveau = niveau;
-        this.horaire = new Horaire();
+        this.horaire = horaire;
+        this.cours = cours;
     }
 
     public String getPrenom() {
@@ -49,4 +53,11 @@ public class Etudiant {
         this.horaire = horaire;
     }
 
+    public List<Cours> getCours() {
+        return this.cours;
+    }
+
+    public void setCours(List<Cours> cours) {
+        this.cours = cours;
+    }
 }
